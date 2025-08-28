@@ -1,5 +1,4 @@
 python-telegram-bot==20.3
 easyocr==1.7.2
-torch==1.13.1+cpu
-torchvision==0.14.1+cpu
---extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.2.1+cpu
+torchvision==0.17.1+cpu
