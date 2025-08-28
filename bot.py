@@ -108,7 +108,7 @@ async def receber_imagem(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Não consegui identificar o valor no comprovante.")
 
 # Inicialização do bot
-app = ApplicationBuilder().token(os.getenv("TELEGRAM_BOT_TOKEN")).build()
+app = ApplicationBuilder().token(os.getenv("8279830279:AAGy7R81ZU3q_pj9JyQDGsPzou0m2ygEbJc")).build()
 
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("salario", salario))
@@ -120,3 +120,4 @@ app.add_handler(CommandHandler("relatorio", relatorio))
 app.add_handler(MessageHandler(filters.PHOTO, receber_imagem))
 
 app.run_polling()
+
