@@ -1,7 +1,14 @@
 import os
 import sqlite3
+import re
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters
+)
 import easyocr
 
 # Inicializa banco de dados
@@ -20,7 +27,10 @@ conn.commit()
 
 # Funções auxiliares
 def registrar(tipo, categoria, valor):
-    cursor.execute("INSERT INTO financeiro (categoria, valor, tipo) VALUES (?, ?, ?)", (categoria, valor, tipo))
+    cursor.execute(
+        "INSERT INTO financeiro (categoria, valor, tipo) VALUES (?, ?, ?)",
+        (categoria, valor, tipo)
+    )
     conn.commit()
 
 def somar(tipo):
@@ -37,19 +47,28 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Olá! Me diga seu salário com /salario 3000")
 
 async def salario(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    valor = float(context.args[0])
-    registrar("salario", "salario", valor)
-    await update.message.reply_text(f"Salário registrado: R$ {valor:.2f}")
+    try:
+        valor = float(context.args[0])
+        registrar("salario", "salario", valor)
+        await update.message.reply_text(f"Salário registrado: R$ {valor:.2f}")
+    except (IndexError, ValueError):
+        await update.message.reply_text("Use: /salario valor")
 
 async def fixos(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    valor = float(context.args[0])
-    registrar("fixos", "fixos", valor)
-    await update.message.reply_text(f"Gastos fixos registrados: R$ {valor:.2f}")
+    try:
+        valor = float(context.args[0])
+        registrar("fixos", "fixos", valor)
+        await update.message.reply_text(f"Gastos fixos registrados: R$ {valor:.2f}")
+    except (IndexError, ValueError):
+        await update.message.reply_text("Use: /fixos valor")
 
 async def lazer(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    valor = float(context.args[0])
-    registrar("lazer", "lazer", valor)
-    await update.message.reply_text(f"Limite de lazer: R$ {valor:.2f}")
+    try:
+        valor = float(context.args[0])
+        registrar("lazer", "lazer", valor)
+        await update.message.reply_text(f"Limite de lazer: R$ {valor:.2f}")
+    except (IndexError, ValueError):
+        await update.message.reply_text("Use: /lazer valor")
 
 async def gasto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -57,7 +76,7 @@ async def gasto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         valor = float(context.args[1])
         registrar("gasto", categoria, valor)
         await update.message.reply_text(f"Gasto registrado: {categoria} - R$ {valor:.2f}")
-    except:
+    except (IndexError, ValueError):
         await update.message.reply_text("Formato inválido. Use: /gasto categoria valor")
 
 async def resumo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -65,7 +84,9 @@ async def resumo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     fixos_total = somar("fixos")
     gastos_total = somar("gasto")
     saldo = salario_total - fixos_total - gastos_total
-    await update.message.reply_text(f"Gastos: R$ {gastos_total:.2f}\nSaldo restante: R$ {saldo:.2f}")
+    await update.message.reply_text(
+        f"Gastos: R$ {gastos_total:.2f}\nSaldo restante: R$ {saldo:.2f}"
+    )
 
 async def relatorio(update: Update, context: ContextTypes.DEFAULT_TYPE):
     gastos = listar_gastos()
@@ -96,19 +117,24 @@ async def receber_imagem(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for linha in resultado:
         texto = linha[1]
-        if "R$" in texto or "," in texto:
+        match = re.search(r"R?\$?\s?(\d+[.,]?\d*)", texto)
+        if match:
             try:
-                valor = float(texto.replace("R$", "").replace(",", "."))
+                valor = float(match.group(1).replace(",", "."))
                 registrar("gasto", "imagem", valor)
                 await update.message.reply_text(f"Gasto registrado via imagem: R$ {valor:.2f}")
                 return
-            except:
+            except ValueError:
                 continue
 
     await update.message.reply_text("Não consegui identificar o valor no comprovante.")
 
 # Inicialização do bot
-app = ApplicationBuilder().token(os.getenv("8279830279:AAGy7R81ZU3q_pj9JyQDGsPzou0m2ygEbJc")).build()
+token = os.getenv("TELEGRAM_BOT_TOKEN")
+if not token:
+    raise ValueError("Variável TELEGRAM_BOT_TOKEN não definida")
+
+app = ApplicationBuilder().token(token).build()
 
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("salario", salario))
@@ -119,5 +145,7 @@ app.add_handler(CommandHandler("resumo", resumo))
 app.add_handler(CommandHandler("relatorio", relatorio))
 app.add_handler(MessageHandler(filters.PHOTO, receber_imagem))
 
-app.run_polling()
-
+try:
+    app.run_polling()
+except Exception as e:
+    print(f"Erro ao iniciar o bot: {e}")
