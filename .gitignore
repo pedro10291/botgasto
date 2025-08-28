@@ -1,0 +1,22 @@
+# Arquivos Python compilados
+__pycache__/
+*.py[cod]
+
+# Banco de dados local
+*.db
+
+# Arquivos temporários
+*.log
+*.tmp
+
+# Imagens salvas pelo bot
+comprovante.jpg
+
+# Ambiente virtual
+venv/
+.env
+.venv/
+opt/
+
+# Configurações do Railway
+.nixpacks/
